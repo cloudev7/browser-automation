@@ -18,30 +18,39 @@ from selenium.common.exceptions import TimeoutException, WebDriverException
 import selenium.webdriver.support.expected_conditions as EC 
 import browsermobproxy
 import urllib, json, unittest, re
-import os, sys, datetime, time, signal, traceback
+import os, sys, datetime, time, signal, traceback, getopt
 import logging, inspect
 
+
 # configure logging
+RELATIVE_PATH         = "/tmp"
 SYSTEM_LOG_FILE_PATH  = os.path.dirname(os.path.realpath(__file__))
 LOG_FILE              = "userjourney.log"
-CONFIG_FILE           = SYSTEM_LOG_FILE_PATH + "/journey.conf"
+CONFIG_FILE           = "journey.conf"
 steps                 = dict()
 
-#sys.tracebacklimit = 0
-os.system('rm -f ' + SYSTEM_LOG_FILE_PATH + '/' + LOG_FILE) 
-os.system('mkdir -p ' + SYSTEM_LOG_FILE_PATH + '/old') 
-os.system('mv -f ' + SYSTEM_LOG_FILE_PATH + '/*.har ' + SYSTEM_LOG_FILE_PATH + "/old 2> /dev/null") 
-os.system('mv -f ' + SYSTEM_LOG_FILE_PATH + '/*.png ' + SYSTEM_LOG_FILE_PATH + "/old 2> /dev/null") 
-
 # setup logging
+#sys.tracebacklimit = 0
 FORMAT = "%(asctime)-15s %(source)-9s %(user)-8s [%(levelname)-8s] %(message)s"
 LOG_HEAD  = {'source': 'SELENIUM', 'user': 'bi-robot'}
-logging.basicConfig(
-    filename = SYSTEM_LOG_FILE_PATH + '/' + LOG_FILE,
-    format = FORMAT
-)
-logger = logging.getLogger('userjourney')
-logger.setLevel(logging.DEBUG)
+logger = None
+
+def configurePath():
+
+    global logger 
+    os.system('mkdir -p ' + RELATIVE_PATH + '/old') 
+    os.system('mv -f ' + RELATIVE_PATH + '/*.har ' + RELATIVE_PATH + "/old 2> /dev/null") 
+    os.system('mv -f ' + RELATIVE_PATH + '/*.png ' + RELATIVE_PATH + "/old 2> /dev/null") 
+    os.system('mv -f ' + RELATIVE_PATH + '/' + LOG_FILE + ' ' + RELATIVE_PATH + "/old 2> /dev/null") 
+
+    logging.basicConfig(
+        filename = RELATIVE_PATH + '/' + LOG_FILE,
+        format = FORMAT
+    )
+    logger = logging.getLogger('userjourney')
+    logger.setLevel(logging.DEBUG)
+    logger.info("initialising script", extra=LOG_HEAD)
+    logger.debug("Its'working huray......!", extra=LOG_HEAD)
 
 #"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:38.0) Gecko/20100101 Firefox/38.0"
 user_agent_str = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.11; rv:43.0) Gecko/20100101 Firefox/43.0; TryzensUXBot"
@@ -51,8 +60,6 @@ user_agent_str = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.11; rv:43.0) Gecko/2
 capabilities = DesiredCapabilities.FIREFOX.copy()
 capabilities['general.useragent.override'] = user_agent_str
 driver = None
-
-logger.info("initialising script", extra=LOG_HEAD)
 
 # User variables
 SYSTEM_WEB_DOMAIN = "localhost"
@@ -68,7 +75,6 @@ SYSTEM_SLA_PAGE_TIME_THRESHOLD = 30
 requestTimeErrPattern    = re.compile(r"^RequestTime")
 pageTimeErrPattern       = re.compile(r"^PageTime")
 naviagtionTimeErrPattern = re.compile(r"^Navigation")
-
 proxi = None
 
 # Other variables
@@ -298,7 +304,7 @@ class SyntheticUserJourney(unittest.TestCase):
 
             with timeout(seconds=SYSTEM_SLA_REQUEST_TIME_THRESHOLD):
                 driver.save_screenshot(
-                  SYSTEM_LOG_FILE_PATH + '/' 
+                  RELATIVE_PATH + '/' 
                   + OUTPUT_FILE_HEAD + "_" 
                   + stepSeq + "-" 
                   + stepSeqSub + "_" 
@@ -479,7 +485,7 @@ class SyntheticUserJourney(unittest.TestCase):
 
         har_data = json.dumps(proxi.har, indent=4)
         try:
-            save_har = open(SYSTEM_LOG_FILE_PATH + '/' + OUTPUT_FILE_HEAD + "_" + stepSeq + "-" + stepSeqSub + "_" + stepName + ".har", 'w')
+            save_har = open(RELATIVE_PATH + '/' + OUTPUT_FILE_HEAD + "_" + stepSeq + "-" + stepSeqSub + "_" + stepName + ".har", 'w')
             save_har.write(har_data)
             save_har.close()
 
@@ -566,6 +572,39 @@ class SyntheticUserJourney(unittest.TestCase):
             pass
 
 
+def usage():
+    print ("%s\n    -h, --hel\n    -c configfile or --config=<configfile>\n%s" %(__file__, "Note: config file path should be relative to the script path"))
+
+
+# method that does the initiallisation and runs the test
+def init(argv):
+
+    global RELATIVE_PATH
+    try:
+        opts, args = getopt.getopt(argv,"hc:",["help", "config="])
+
+        for opt, arg in opts:
+            if opt in ("-h", "--help"):
+                usage()
+                sys.exit(0)
+
+            elif opt == '-c' or opt == "--config":
+                RELATIVE_PATH = SYSTEM_LOG_FILE_PATH + "/" + arg
+                configurePath()
+                # Now run the user journey
+                out = SyntheticUserJourney('test_userJourney')()
+                sys.exit(0)
+
+        print "Oops! sorry mate, I didn't understand that\n"
+        usage()
+        sys.exit(0)
+
+    except getopt.GetoptError:
+        usage()
+        sys.exit(2)
+
+# The main entry point in the script
 if __name__ == "__main__":
-    unittest.main()
+    init(sys.argv[1:])
+
 
