@@ -43,6 +43,7 @@ def configurePath():
     os.system('mv -f ' + RELATIVE_PATH + '/*.png ' + RELATIVE_PATH + "/old 2> /dev/null") 
     os.system('mv -f ' + RELATIVE_PATH + '/' + LOG_FILE + ' ' + RELATIVE_PATH + "/old 2> /dev/null") 
 
+    print RELATIVE_PATH + "/" + LOG_FILE
     logging.basicConfig(
         filename = RELATIVE_PATH + '/' + LOG_FILE,
         format = FORMAT
@@ -51,63 +52,6 @@ def configurePath():
     logger.setLevel(logging.DEBUG)
     logger.info("initialising script", extra=LOG_HEAD)
     logger.debug("Its'working huray......!", extra=LOG_HEAD)
-
-#"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:38.0) Gecko/20100101 Firefox/38.0"
-user_agent_str = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.11; rv:43.0) Gecko/20100101 Firefox/43.0; TryzensUXBot"
-#"Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/45.0.2454.101 Safari/537.36"
-
-# Global declarations
-capabilities = DesiredCapabilities.FIREFOX.copy()
-capabilities['general.useragent.override'] = user_agent_str
-driver = None
-
-# User variables
-SYSTEM_WEB_DOMAIN = "localhost"
-SYSTEM_GRAYLOG_REST_URL = "https://127.0.0.1:12280/gelf"
-SYSTEM_SELENIUM_HUB_URL = "http://127.0.0.1:4444/wd/hub"
-SYSTEM_BROWSER_PROXY = "127.0.0.1:9090"
-SYSTEM_JOURNEY_NAME = "GuestBrowseSite"
-SYSTEM_SLEEP_TIME_BEFORE_TERMINATE = 5
-SYSTEM_THINK_TIME_BETWEEN_STEPS = 1
-SYSTEM_SLA_REQUEST_TIME_THRESHOLD = 15
-SYSTEM_SLA_PAGE_TIME_THRESHOLD = 30
-
-requestTimeErrPattern    = re.compile(r"^RequestTime")
-pageTimeErrPattern       = re.compile(r"^PageTime")
-naviagtionTimeErrPattern = re.compile(r"^Navigation")
-proxi = None
-
-# Other variables
-OUTPUT_FILE_HEAD = SYSTEM_WEB_DOMAIN.replace("/", "_")
-startTime = 0
-endTime = 0
-
-sessionId = "-"
-maxTime = 0
-stepTime = 0
-pageSize = 0
-numRequests = 0
-statusCode = "-"
-errCount = 0
-expensiveURL = "-"
-exception = None 
-
-sizeUnit = "Bytes"
-total_byteSize = 0
-currRequest = 0
-stepStarted = False
-
-JOURNEY_STATUS_NOT_STARTED="NOT_STARTED"
-JOURNEY_STATUS_FAILED="FAILED: "
-JOURNEY_STATUS_PASSED="SUCCESSFUL"
-journey_status = JOURNEY_STATUS_NOT_STARTED
-final_exception = None
-expensive_step = "-"
-max_step_time = 0
-total_err_count = 0
-journey_time = 0
-Error_Message = ""
-ProcessEndOfStep = False
 
 # class structure to hold user journey step definition
 class UserJourneyStep:
@@ -124,7 +68,7 @@ class UserJourneyStep:
         self.seq = ""
         self.seq_sub = ""
         self.name = ""
-        self.mthod = ""
+        self.method = ""
         self.url = "" 
         self.tls = "" 
         self.xpath = ""
@@ -140,7 +84,7 @@ def loadConfigs():
     # ---------- Read gloabl configs ----------
     expr = re.compile(r"^SYSTEM_([^\=]+?)\=\"(.*?)\"")
     try:
-        fhndl = open(CONFIG_FILE)
+        fhndl = open(RELATIVE_PATH + "/" + CONFIG_FILE)
     except IOError as e:
         logger.error("I/O error({0}): {1}".format(e.errno, e.strerror), extra=LOG_HEAD)
         sys.exit(2)
@@ -267,6 +211,7 @@ class SyntheticUserJourney(unittest.TestCase):
 
         base_url = self.base_url 
 
+        print stepName + " " + action + " " + xpath + " " + str(addAttr)
         try:
             if action == "get":
                 if tls == True:
@@ -296,6 +241,14 @@ class SyntheticUserJourney(unittest.TestCase):
             elif action == "keyin" and addAttr != "":
                 with timeout(seconds=SYSTEM_SLA_REQUEST_TIME_THRESHOLD):
                     driver.find_element_by_xpath(xpath).send_keys(addAttr)
+
+            elif action == "select" and addAttr != "":
+                logeer.debug("####### IN SELECT BLOCK ##########", extra=LOG_HEAD)
+                with timeout(seconds=SYSTEM_SLA_REQUEST_TIME_THRESHOLD):
+                    select = Select(driver.find_element_by_xpath(xpath))
+                    print select.options
+                    #œ∑€321#¡select_by_index(addAttr)
+                    #select_hndl.select_by_value(addAttr)
 
             if stepSeq == "1" and stepSeqSub == "0":
                 with timeout(seconds=SYSTEM_SLA_REQUEST_TIME_THRESHOLD):
@@ -427,7 +380,7 @@ class SyntheticUserJourney(unittest.TestCase):
         sortedSeq = sorted(steps, key=lambda x: int(x))
 
         for i in sortedSeq:
-            #print "executig step : " + str(steps[i].seq) + "." + str(steps[i].seq_sub) + " : " +str(steps[i].name)  
+            print "executig step : " + str(steps[i].seq) + "." + str(steps[i].seq_sub) + " : " + str(steps[i].name) + " : " +  str(steps[i].xpath_attr)
             self.execute_step(steps[i].method, steps[i].seq, steps[i].seq_sub, steps[i].name, steps[i].url, steps[i].xpath, steps[i].xpath_attr, steps[i].tls)
         
         if final_exception != None:
@@ -602,6 +555,63 @@ def init(argv):
     except getopt.GetoptError:
         usage()
         sys.exit(2)
+
+#"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:38.0) Gecko/20100101 Firefox/38.0"
+user_agent_str = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.11; rv:43.0) Gecko/20100101 Firefox/43.0; TryzensUXBot"
+#"Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/45.0.2454.101 Safari/537.36"
+
+# Global declarations
+capabilities = DesiredCapabilities.FIREFOX.copy()
+capabilities['general.useragent.override'] = user_agent_str
+driver = None
+
+# User variables
+SYSTEM_WEB_DOMAIN = "localhost"
+SYSTEM_GRAYLOG_REST_URL = "https://127.0.0.1:12280/gelf"
+SYSTEM_SELENIUM_HUB_URL = "http://127.0.0.1:4444/wd/hub"
+SYSTEM_BROWSER_PROXY = "127.0.0.1:9090"
+SYSTEM_JOURNEY_NAME = "GuestBrowseSite"
+SYSTEM_SLEEP_TIME_BEFORE_TERMINATE = 5
+SYSTEM_THINK_TIME_BETWEEN_STEPS = 1
+SYSTEM_SLA_REQUEST_TIME_THRESHOLD = 15
+SYSTEM_SLA_PAGE_TIME_THRESHOLD = 30
+
+requestTimeErrPattern    = re.compile(r"^RequestTime")
+pageTimeErrPattern       = re.compile(r"^PageTime")
+naviagtionTimeErrPattern = re.compile(r"^Navigation")
+proxi = None
+
+# Other variables
+OUTPUT_FILE_HEAD = SYSTEM_WEB_DOMAIN.replace("/", "_")
+startTime = 0
+endTime = 0
+
+sessionId = "-"
+maxTime = 0
+stepTime = 0
+pageSize = 0
+numRequests = 0
+statusCode = "-"
+errCount = 0
+expensiveURL = "-"
+exception = None 
+
+sizeUnit = "Bytes"
+total_byteSize = 0
+currRequest = 0
+stepStarted = False
+
+JOURNEY_STATUS_NOT_STARTED="NOT_STARTED"
+JOURNEY_STATUS_FAILED="FAILED: "
+JOURNEY_STATUS_PASSED="SUCCESSFUL"
+journey_status = JOURNEY_STATUS_NOT_STARTED
+final_exception = None
+expensive_step = "-"
+max_step_time = 0
+total_err_count = 0
+journey_time = 0
+Error_Message = ""
+ProcessEndOfStep = False
 
 # The main entry point in the script
 if __name__ == "__main__":
