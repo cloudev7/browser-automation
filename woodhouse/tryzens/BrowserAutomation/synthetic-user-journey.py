@@ -211,7 +211,7 @@ class SyntheticUserJourney(unittest.TestCase):
 
         base_url = self.base_url 
 
-        print stepName + " " + action + " " + xpath + " " + str(addAttr)
+        #print stepName + " " + action + " " + xpath + " " + str(addAttr)
         try:
             if action == "get":
                 if tls == True:
@@ -380,7 +380,7 @@ class SyntheticUserJourney(unittest.TestCase):
         sortedSeq = sorted(steps, key=lambda x: int(x))
 
         for i in sortedSeq:
-            print "executig step : " + str(steps[i].seq) + "." + str(steps[i].seq_sub) + " : " + str(steps[i].name) + " : " +  str(steps[i].xpath_attr)
+            #print "executig step : " + str(steps[i].seq) + "." + str(steps[i].seq_sub) + " : " + str(steps[i].name) + " : " +  str(steps[i].xpath_attr)
             self.execute_step(steps[i].method, steps[i].seq, steps[i].seq_sub, steps[i].name, steps[i].url, steps[i].xpath, steps[i].xpath_attr, steps[i].tls)
         
         if final_exception != None:
