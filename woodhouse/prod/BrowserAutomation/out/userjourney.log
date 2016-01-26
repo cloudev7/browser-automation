@@ -1,0 +1,15 @@
+2016-01-23 17:07:53,676 SELENIUM  bi-robot [INFO    ] initialising script
+2016-01-23 17:07:53,676 SELENIUM  bi-robot [DEBUG   ] Its'working huray......!
+2016-01-23 17:07:53,676 SELENIUM  bi-robot [INFO    ] ------- User parameters--------
+2016-01-23 17:07:53,677 SELENIUM  bi-robot [INFO    ] SYSTEM_WEB_DOMAIN                 : www.woodhouseclothing.com
+2016-01-23 17:07:53,677 SELENIUM  bi-robot [INFO    ] SYSTEM_SELENIUM_HUB_URL           : http://127.0.0.1:4444/wd/hub
+2016-01-23 17:07:53,677 SELENIUM  bi-robot [INFO    ] SYSTEM_BROWSER_PROXY              : 127.0.0.1:9090
+2016-01-23 17:07:53,677 SELENIUM  bi-robot [INFO    ] SYSTEM_GRAYLOG_REST_URL           : https://52.31.192.17:12280/gelf
+2016-01-23 17:07:53,677 SELENIUM  bi-robot [INFO    ] SYSTEM_JOURNEY_NAME               : GuestUserCart
+2016-01-23 17:07:53,678 SELENIUM  bi-robot [INFO    ] SYSTEM_THINK_TIME_BETWEEN_STEPS   : 1 seconds
+2016-01-23 17:07:53,678 SELENIUM  bi-robot [INFO    ] SYSTEM_SLEEP_TIME_BEFORE_TERMINATE: 5 seconds
+2016-01-23 17:07:53,678 SELENIUM  bi-robot [INFO    ] SYSTEM_SLA_REQUEST_TIME_THRESHOLD : 180 seconds
+2016-01-23 17:07:53,678 SELENIUM  bi-robot [INFO    ] SYSTEM_SLA_PAGE_TIME_THRESHOLD    : 180 seconds
+2016-01-23 17:07:53,678 SELENIUM  bi-robot [INFO    ] SYSTEM_LOG_FILE_PATH              : /Users/rumiismail/developer/browser-automation/woodhouse/prod/BrowserAutomation
+2016-01-23 17:07:53,678 SELENIUM  bi-robot [INFO    ] ---- now into real business ----
+2016-01-23 17:08:08,089 SELENIUM  bi-robot [INFO    ] executing step 1.0 - homePage
