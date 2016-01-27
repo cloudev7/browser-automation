@@ -3,7 +3,7 @@
 # Author  : Mohamed Ismail (mohamed.ismail@tryzens.com)           /
 # Company : Tryzens                                               /
 # Date    : 9 Jan 2016                                            /
-# Version : 2.2.0                                                 /
+# Version : 3.0.0                                                 /
 # Description : This script is used to simulate customer journey  /
 # ****************************************************************/
 from selenium import webdriver
@@ -43,6 +43,7 @@ def configurePath():
     os.system('mv -f ' + RELATIVE_PATH + '/*.png ' + RELATIVE_PATH + "/old 2> /dev/null") 
     os.system('mv -f ' + RELATIVE_PATH + '/' + LOG_FILE + ' ' + RELATIVE_PATH + "/old 2> /dev/null") 
 
+    #print RELATIVE_PATH + "/" + LOG_FILE
     logging.basicConfig(
         filename = RELATIVE_PATH + '/' + LOG_FILE,
         format = FORMAT
@@ -50,64 +51,7 @@ def configurePath():
     logger = logging.getLogger('userjourney')
     logger.setLevel(logging.DEBUG)
     logger.info("initialising script", extra=LOG_HEAD)
-    logger.debug("Its'working huray......!", extra=LOG_HEAD)
 
-#"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:38.0) Gecko/20100101 Firefox/38.0"
-user_agent_str = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.11; rv:43.0) Gecko/20100101 Firefox/43.0; TryzensUXBot"
-#"Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/45.0.2454.101 Safari/537.36"
-
-# Global declarations
-capabilities = DesiredCapabilities.FIREFOX.copy()
-capabilities['general.useragent.override'] = user_agent_str
-driver = None
-
-# User variables
-SYSTEM_WEB_DOMAIN = "localhost"
-SYSTEM_GRAYLOG_REST_URL = "https://127.0.0.1:12280/gelf"
-SYSTEM_SELENIUM_HUB_URL = "http://127.0.0.1:4444/wd/hub"
-SYSTEM_BROWSER_PROXY = "127.0.0.1:9090"
-SYSTEM_JOURNEY_NAME = "GuestBrowseSite"
-SYSTEM_SLEEP_TIME_BEFORE_TERMINATE = 5
-SYSTEM_THINK_TIME_BETWEEN_STEPS = 1
-SYSTEM_SLA_REQUEST_TIME_THRESHOLD = 15
-SYSTEM_SLA_PAGE_TIME_THRESHOLD = 30
-
-requestTimeErrPattern    = re.compile(r"^RequestTime")
-pageTimeErrPattern       = re.compile(r"^PageTime")
-naviagtionTimeErrPattern = re.compile(r"^Navigation")
-proxi = None
-
-# Other variables
-OUTPUT_FILE_HEAD = SYSTEM_WEB_DOMAIN.replace("/", "_")
-startTime = 0
-endTime = 0
-
-sessionId = "-"
-maxTime = 0
-stepTime = 0
-pageSize = 0
-numRequests = 0
-statusCode = "-"
-errCount = 0
-expensiveURL = "-"
-exception = None 
-
-sizeUnit = "Bytes"
-total_byteSize = 0
-currRequest = 0
-stepStarted = False
-
-JOURNEY_STATUS_NOT_STARTED="NOT_STARTED"
-JOURNEY_STATUS_FAILED="FAILED: "
-JOURNEY_STATUS_PASSED="SUCCESSFUL"
-journey_status = JOURNEY_STATUS_NOT_STARTED
-final_exception = None
-expensive_step = "-"
-max_step_time = 0
-total_err_count = 0
-journey_time = 0
-Error_Message = ""
-ProcessEndOfStep = False
 
 # class structure to hold user journey step definition
 class UserJourneyStep:
@@ -124,7 +68,7 @@ class UserJourneyStep:
         self.seq = ""
         self.seq_sub = ""
         self.name = ""
-        self.mthod = ""
+        self.method = ""
         self.url = "" 
         self.tls = "" 
         self.xpath = ""
@@ -140,7 +84,7 @@ def loadConfigs():
     # ---------- Read gloabl configs ----------
     expr = re.compile(r"^SYSTEM_([^\=]+?)\=\"(.*?)\"")
     try:
-        fhndl = open(CONFIG_FILE)
+        fhndl = open(RELATIVE_PATH + "/" + CONFIG_FILE)
     except IOError as e:
         logger.error("I/O error({0}): {1}".format(e.errno, e.strerror), extra=LOG_HEAD)
         sys.exit(2)
@@ -219,6 +163,34 @@ class SyntheticUserJourney(unittest.TestCase):
     def getTimestamp(self):
         return datetime.datetime.fromtimestamp(time.time()).strftime('%d-%m-%Y %H:%M:%S')
 
+
+    def getSessionId(self):
+        
+        global exception, Error_Message, sessionId
+        cookie_found = False
+        cookies = None
+        try:
+            with timeout(seconds=SYSTEM_SLA_REQUEST_TIME_THRESHOLD):
+                cookies = driver.get_cookies()
+        except TimeoutException, err:
+            pass
+
+        if cookies != None:
+            logger.debug(">>>>> looking to extract the session id", extra=LOG_HEAD)
+            for session_key in PLATFORM_SESSION_IDENTIFIER:     
+                for cookie in cookies:
+                    if cookie['name'] == session_key:
+                        sessionId = str(cookie['value'])
+                        cookie_found = True
+                        break
+            
+                if cookie_found == True: 
+                    break
+
+        logger.debug(">>>>> after exiting the loop in getSessionId()", extra=LOG_HEAD)
+        return sessionId
+  
+
     def setUp(self):
         global driver, proxi, final_exception, exception, Error_Message
         try:
@@ -257,7 +229,7 @@ class SyntheticUserJourney(unittest.TestCase):
 
         exception = None
 
-        logger.info("executing step %s.%s - %s", stepSeq, stepSeqSub, stepName, extra=LOG_HEAD) 
+        logger.info("BEGIN step %s.%s - %s", stepSeq, stepSeqSub, stepName, extra=LOG_HEAD) 
 
         if stepStarted == False:
             stepStarted = True
@@ -268,6 +240,7 @@ class SyntheticUserJourney(unittest.TestCase):
         base_url = self.base_url 
 
         try:
+            logger.debug(">>>>> ENTER executing step {0}.{1} action {2}".format(str(stepSeq), str(stepSeqSub), action), extra=LOG_HEAD)
             if action == "get":
                 if tls == True:
                     base_url = self.base_url_tls 
@@ -277,7 +250,6 @@ class SyntheticUserJourney(unittest.TestCase):
             elif action == "hover":
                 with timeout(seconds=SYSTEM_SLA_REQUEST_TIME_THRESHOLD):
                     hndl = driver.find_element_by_xpath(xpath)
-                with timeout(seconds=SYSTEM_SLA_REQUEST_TIME_THRESHOLD):
                     ActionChains(driver).move_to_element(hndl).perform() 
 
             elif action == "click":
@@ -297,11 +269,24 @@ class SyntheticUserJourney(unittest.TestCase):
                 with timeout(seconds=SYSTEM_SLA_REQUEST_TIME_THRESHOLD):
                     driver.find_element_by_xpath(xpath).send_keys(addAttr)
 
-            if stepSeq == "1" and stepSeqSub == "0":
-                with timeout(seconds=SYSTEM_SLA_REQUEST_TIME_THRESHOLD):
-                    sessionId = driver.execute_script("return tfa.getSessionId()")
-                    logger.info("user session id: %s", sessionId, extra=LOG_HEAD)
+            elif action == "select" and addAttr != "":
+                logger.debug(">>>>> inside action SELECT block - {0}".format(str(addAttr)), extra=LOG_HEAD)
 
+                with timeout(seconds=SYSTEM_SLA_REQUEST_TIME_THRESHOLD):
+                    logger.debug(">>>>> before SELECT: line {0}".format(str(__LINE__)), extra=LOG_HEAD)
+                    select = Select(driver.find_element_by_name(xpath))
+                    select.select_by_index(2)
+                    logger.debug(">>>>> after SELECT: line {0}".format(str(__LINE__)), extra=LOG_HEAD)
+
+            logger.debug(">>>>> EXIT after executing step {0}.{1} action {2}".format(str(stepSeq), str(stepSeqSub), action), extra=LOG_HEAD)
+
+            if stepSeq == "1" and stepSeqSub == "0":
+                #with timeout(seconds=SYSTEM_SLA_REQUEST_TIME_THRESHOLD):
+                sessionId = self.getSessionId()
+                #sessionId = driver.execute_script("return tfa.getSessionId()")
+                logger.info("user session id: %s", sessionId, extra=LOG_HEAD)
+
+            logger.debug(">>>>> BEGIN capturing a screenshot of the current page", extra=LOG_HEAD)
             with timeout(seconds=SYSTEM_SLA_REQUEST_TIME_THRESHOLD):
                 driver.save_screenshot(
                   RELATIVE_PATH + '/' 
@@ -310,6 +295,7 @@ class SyntheticUserJourney(unittest.TestCase):
                   + stepSeqSub + "_" 
                   + stepName + ".png"
                 )
+            logger.debug(">>>>> END capturing the screenshot of the current page", extra=LOG_HEAD)
 
         except TimeoutException, err:
             exception = "TimeoutException" 
@@ -326,49 +312,61 @@ class SyntheticUserJourney(unittest.TestCase):
         if stepSeqSub != "0" and exception == None:
             return
 
+
         global statusCode, ProcessEndOfStep, errCount, expensiveURL, maxTime, stepTime 
 
         stepStarted = False
         endTime = time.time() * 1000
         ProcessEndOfStep = True
         maxTime = 0         
-
         domContentLoadedTime = 0
         fullyLoadedTime = 0
 
         if exception == None:
+            logger.debug(">>>>> I will now try to capture the pageload times, but could take long on a slow site", extra=LOG_HEAD)
+
             try:
                 with timeout(seconds=SYSTEM_SLA_REQUEST_TIME_THRESHOLD):
-                    domContentLoadedTime = driver.execute_script("return window.performance.timing.domContentLoadedEventEnd - window.performance.timing.navigationStart")
-                    fullyLoadedTime = driver.execute_script("return window.performance.timing.loadEventEnd - window.performance.timing.navigationStart")
-            
+                    while ( domContentLoadedTime <= 0 or fullyLoadedTime <= 0 ):                        
+                        if domContentLoadedTime <= 0:
+                            domContentLoadedTime = driver.execute_script("return window.performance.timing.domContentLoadedEventEnd - window.performance.timing.navigationStart")
+                        if fullyLoadedTime <= 0:
+                            fullyLoadedTime = driver.execute_script("return window.performance.timing.loadEventEnd - window.performance.timing.navigationStart")
+
             except TimeoutException, err:
-                if domContentLoadedTime == 0:
-                    domContentLoadedTime = ( SYSTEM_SLA_REQUEST_TIME_THRESHOLD * 1000 )
-                if fullyLoadedTime == 0:
-                    fullyLoadedTime = ( SYSTEM_SLA_REQUEST_TIME_THRESHOLD * 1000 )
+                logger.error("timeout: wait time to loadEventEnd() exceeded time (%s) seconds [%s]", str(SYSTEM_SLA_REQUEST_TIME_THRESHOLD), getFrame(), extra=LOG_HEAD)
 
+            if fullyLoadedTime >= ( SYSTEM_SLA_REQUEST_TIME_THRESHOLD * 1000 ) or fullyLoadedTime <= 0:
                 exception = "TimeoutException" 
-                Error_Message = "Navigation complete wait time exceeded"
+                Error_Message = "RequestTime exceeded SLA time " + str( SYSTEM_SLA_REQUEST_TIME_THRESHOLD * 1000 )
                 final_exception = exception
-
-                if uri == "":
-                    uri = stepName # an alternative to set the URL when its empty 
-
                 override_max_time = ( SYSTEM_SLA_REQUEST_TIME_THRESHOLD * 1000 )
                 override_expensive_url = uri 
-                logger.error("timeout: WAIT-TIME exceeded time (%s) seconds [%s]. continuing...", str(SYSTEM_SLA_REQUEST_TIME_THRESHOLD), getFrame(), extra=LOG_HEAD)
+
+            if domContentLoadedTime <= 0:
+                domContentLoadedTime = ( SYSTEM_SLA_REQUEST_TIME_THRESHOLD * 1000 )
+
+            if fullyLoadedTime <= 0:
+                fullyLoadedTime = ( SYSTEM_SLA_REQUEST_TIME_THRESHOLD * 1000 )                
+
+            if uri == "":
+                uri = stepName # an alternative to set the URL when its empty 
+
         
+        logger.debug(">>>>> now I'm registerign the step time", extra=LOG_HEAD)
         if fullyLoadedTime > 0:
             stepTime = fullyLoadedTime
         else:
-            if requestTimeErrPattern.match( Error_Message ): # RequestTimeout
+            if timeoutExceptionPatter.match( exception ): # TimeoutException
+                logger.debug(">>>>> setting the FullyLoaded time to be REQUEST SLA threashold!!", extra=LOG_HEAD)
                 stepTime = ( SYSTEM_SLA_REQUEST_TIME_THRESHOLD * 1000 )
             else:
-                stepTime = 0
+                logger.debug(">>>>> the FullyLoaded time is a negative number!!", extra=LOG_HEAD)
+                stepTime = -1
 
-        logger.info("[%2s.%s] %15s : DOMContentLoaded = %10s, FullyLoaded = %10s" %(stepSeq, stepSeqSub, stepName, str(domContentLoadedTime), str(fullyLoadedTime)), extra=LOG_HEAD)
+        logger.debug("[%2s.%s] %15s : DOMContentLoaded = %10s, FullyLoaded = %10s" %(stepSeq, stepSeqSub, stepName, str(domContentLoadedTime), str(fullyLoadedTime)), extra=LOG_HEAD)
 
+        logger.debug(">>>>> I will now start processing the HAR file", extra=LOG_HEAD)
         for ent in proxi.har['log']['entries']:
             currRequest += 1
 
@@ -378,7 +376,10 @@ class SyntheticUserJourney(unittest.TestCase):
                 errCount += 1
             if maxTime < ent['time']:
                 maxTime = ent['time']
-                expensiveURL = ent['request']['url']
+                if len(ent['request']['url']) > 200:
+                    expensiveURL = (ent['request']['url'])[:300]
+                else:
+                    expensiveURL = ent['request']['url']
 
             byteSize = 0
             byteSize = ent['response']['headersSize'] + ent['response']['bodySize']
@@ -404,19 +405,20 @@ class SyntheticUserJourney(unittest.TestCase):
                 logger.warning("timeout: page time exceeded SLA time (%s) seconds [%s]", str(SYSTEM_SLA_PAGE_TIME_THRESHOLD), getFrame(), extra=LOG_HEAD)
 
         ProcessEndOfStep = False
-
-        logger.info("sleeping for %s seconds before next step", str(SYSTEM_THINK_TIME_BETWEEN_STEPS), extra=LOG_HEAD)
-        time.sleep(SYSTEM_THINK_TIME_BETWEEN_STEPS)
+        logger.debug(">>>>> processing the HAR file is now complete", extra=LOG_HEAD)
 
         self.send_step_time(stepSeq, stepSeqSub, stepName)
 
-        if exception != None and not(naviagtionTimeErrPattern.match( Error_Message )): # and not Navigation timeout
+        if exception != None: # and not Navigation timeout
             logger.error("********* %s occurred. aborting user journey :( ********* \n[%s]", exception, getFrame(), extra=LOG_HEAD)
             time.sleep(SYSTEM_SLEEP_TIME_BEFORE_TERMINATE)
-            self.tearDown()
             journey_status = JOURNEY_STATUS_FAILED + final_exception
-            self.send_journey_time()      
+            self.send_journey_time() 
+            self.tearDown()  
             sys.exit(1)
+
+        logger.info("sleeping for %s seconds before next step", str(SYSTEM_THINK_TIME_BETWEEN_STEPS), extra=LOG_HEAD)
+        time.sleep(SYSTEM_THINK_TIME_BETWEEN_STEPS)
 
 
     def test_userJourney(self):
@@ -427,7 +429,7 @@ class SyntheticUserJourney(unittest.TestCase):
         sortedSeq = sorted(steps, key=lambda x: int(x))
 
         for i in sortedSeq:
-            #print "executig step : " + str(steps[i].seq) + "." + str(steps[i].seq_sub) + " : " +str(steps[i].name)  
+            #print "executig step : " + str(steps[i].seq) + "." + str(steps[i].seq_sub) + " : " + str(steps[i].name) + " : " +  str(steps[i].xpath_attr)
             self.execute_step(steps[i].method, steps[i].seq, steps[i].seq_sub, steps[i].name, steps[i].url, steps[i].xpath, steps[i].xpath_attr, steps[i].tls)
         
         if final_exception != None:
@@ -436,12 +438,13 @@ class SyntheticUserJourney(unittest.TestCase):
             journey_status = JOURNEY_STATUS_PASSED
 
         self.send_journey_time()
-        journey_time = 0
 
         # user journey execution steps end heree
         logger.info("sleeping for %s seconds before terminating script", str(SYSTEM_SLEEP_TIME_BEFORE_TERMINATE), extra=LOG_HEAD)
         time.sleep(SYSTEM_SLEEP_TIME_BEFORE_TERMINATE)
-        logger.info("------------ end of execution ------------", extra=LOG_HEAD)        
+        logger.info("------------ end of execution ------------", extra=LOG_HEAD)
+        self.tearDown()
+        sys.exit(0)        
  
 
     def is_element_present(self, how, what):
@@ -469,13 +472,19 @@ class SyntheticUserJourney(unittest.TestCase):
     
 
     def tearDown(self):
-        if driver !=  None:
-            driver.quit()
-        
-        #self.assertEqual([], self.verificationErrors)
+        global proxi, driver
 
-        if proxi != None:
-            proxi.close()
+        if proxi != None or driver != None:
+            try:
+                logger.debug(">>>>>  cleaning up resources <<<<<<", extra=LOG_HEAD)
+                if proxi != None:
+                    proxi.close()
+                    proxi = None
+                if driver != None:
+                    driver.quit()
+                    driver = None
+            except:
+                logger.warning("error while doing the cleanup in tearDown()!!!!", extra=LOG_HEAD)
 
 
     def send_step_time(self, stepSeq, stepSeqSub, stepName):
@@ -490,7 +499,7 @@ class SyntheticUserJourney(unittest.TestCase):
             save_har.close()
 
         except IOError as e:
-            logger.error("I/O error({0}): {1} line-no: {2}".format(e.errno, e.strerror, __LINE__), extra=LOG_HEAD)
+            logger.error("I/O error({0}): {1} {2}]".format(e.errno, e.strerror, getFrame()), extra=LOG_HEAD)
             self.tearDown()
             sys.exit(2)
 
@@ -524,7 +533,7 @@ class SyntheticUserJourney(unittest.TestCase):
             '", "error_message":"' + Error_Message + '" }\''
         )
 
-        logger.debug("page stats: %s", curl_cmd, extra=LOG_HEAD)
+        logger.debug(">>>>> page stats: %s", curl_cmd, extra=LOG_HEAD)
 
         if stepTime > max_step_time:
             max_step_time = stepTime
@@ -564,7 +573,7 @@ class SyntheticUserJourney(unittest.TestCase):
 
         try:
             logger.info("sending journey stats to Graylog @ %s", SYSTEM_GRAYLOG_REST_URL, extra=LOG_HEAD)
-            logger.debug("journey stats: %s", curl_cmd, extra=LOG_HEAD)
+            logger.debug(">>>>> journey stats: %s", curl_cmd, extra=LOG_HEAD)
             os.system(curl_cmd)
             logger.info("******* send ALL COMPLETE ********", extra=LOG_HEAD)
         except Exception, err:
@@ -573,7 +582,7 @@ class SyntheticUserJourney(unittest.TestCase):
 
 
 def usage():
-    print ("%s\n    -h, --hel\n    -c configfile or --config=<configfile>\n%s" %(__file__, "Note: config file path should be relative to the script path"))
+    print ("%s\n    -h, --help\n    -c configfile or --config=<configfile>\n%s" %(__file__, "Note: config file path should be relative to the script path"))
 
 
 # method that does the initiallisation and runs the test
@@ -602,6 +611,72 @@ def init(argv):
     except getopt.GetoptError:
         usage()
         sys.exit(2)
+
+#"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:38.0) Gecko/20100101 Firefox/38.0"
+user_agent_str = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.11; rv:43.0) Gecko/20100101 Firefox/43.0; TryzensUXBot"
+#"Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/45.0.2454.101 Safari/537.36"
+
+# Global declarations
+capabilities = DesiredCapabilities.FIREFOX.copy()
+capabilities['general.useragent.override'] = user_agent_str
+driver = None
+
+# User variables
+SYSTEM_WEB_DOMAIN = "localhost"
+SYSTEM_GRAYLOG_REST_URL = "https://127.0.0.1:12280/gelf"
+SYSTEM_SELENIUM_HUB_URL = "http://127.0.0.1:4444/wd/hub"
+SYSTEM_BROWSER_PROXY = "127.0.0.1:9090"
+SYSTEM_JOURNEY_NAME = "GuestBrowseSite"
+SYSTEM_SLEEP_TIME_BEFORE_TERMINATE = 5
+SYSTEM_THINK_TIME_BETWEEN_STEPS = 1
+SYSTEM_SLA_REQUEST_TIME_THRESHOLD = 15
+SYSTEM_SLA_PAGE_TIME_THRESHOLD = 30
+
+PLATFORM_SESSION_IDENTIFIER = [
+    'sid', 
+    'JSESSIONID', 
+    'CACHED_FRONT_FORM_KEY', 
+    'PHPSESSID'
+]
+
+requestTimeErrPattern    = re.compile(r"^RequestTime")
+pageTimeErrPattern       = re.compile(r"^PageTime")
+naviagtionTimeErrPattern = re.compile(r"^Navigation")
+timeoutExceptionPatter   = re.compile(r"^TimeoutException")
+
+proxi = None
+
+# Other variables
+OUTPUT_FILE_HEAD = SYSTEM_WEB_DOMAIN.replace("/", "_")
+startTime = 0
+endTime = 0
+
+sessionId = "-"
+maxTime = 0
+stepTime = 0
+pageSize = 0
+numRequests = 0
+statusCode = "-"
+errCount = 0
+expensiveURL = "-"
+exception = None 
+
+sizeUnit = "Bytes"
+total_byteSize = 0
+currRequest = 0
+stepStarted = False
+
+JOURNEY_STATUS_NOT_STARTED="NOT_STARTED"
+JOURNEY_STATUS_FAILED="FAILED: "
+JOURNEY_STATUS_PASSED="SUCCESSFUL"
+journey_status = JOURNEY_STATUS_NOT_STARTED
+final_exception = None
+expensive_step = "-"
+max_step_time = 0
+total_err_count = 0
+journey_time = 0
+Error_Message = ""
+ProcessEndOfStep = False
 
 # The main entry point in the script
 if __name__ == "__main__":
