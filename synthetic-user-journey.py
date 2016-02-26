@@ -196,6 +196,7 @@ class SyntheticUserJourney(unittest.TestCase):
         try:
             loadConfigs()
             proxi = browsermobproxy.Client(SYSTEM_BROWSER_PROXY)
+            proxi.blacklist('.*zopim.*',200)
             driver = webdriver.Remote(
                 command_executor=SYSTEM_SELENIUM_HUB_URL,
                 desired_capabilities=capabilities,
@@ -681,5 +682,4 @@ ProcessEndOfStep = False
 # The main entry point in the script
 if __name__ == "__main__":
     init(sys.argv[1:])
-
 

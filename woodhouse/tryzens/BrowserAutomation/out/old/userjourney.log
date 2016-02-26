@@ -1,0 +1,123 @@
+2016-01-28 15:19:39,438 SELENIUM  bi-robot [INFO    ] initialising script
+2016-01-28 15:19:39,439 SELENIUM  bi-robot [INFO    ] ------- User parameters--------
+2016-01-28 15:19:39,439 SELENIUM  bi-robot [INFO    ] SYSTEM_WEB_DOMAIN                 : woodhouse.tryzens.net
+2016-01-28 15:19:39,439 SELENIUM  bi-robot [INFO    ] SYSTEM_SELENIUM_HUB_URL           : http://127.0.0.1:4444/wd/hub
+2016-01-28 15:19:39,439 SELENIUM  bi-robot [INFO    ] SYSTEM_BROWSER_PROXY              : 127.0.0.1:9090
+2016-01-28 15:19:39,439 SELENIUM  bi-robot [INFO    ] SYSTEM_GRAYLOG_REST_URL           : https://52.31.192.17:12280/gelf
+2016-01-28 15:19:39,439 SELENIUM  bi-robot [INFO    ] SYSTEM_JOURNEY_NAME               : GuestUserCart
+2016-01-28 15:19:39,439 SELENIUM  bi-robot [INFO    ] SYSTEM_THINK_TIME_BETWEEN_STEPS   : 1 seconds
+2016-01-28 15:19:39,439 SELENIUM  bi-robot [INFO    ] SYSTEM_SLEEP_TIME_BEFORE_TERMINATE: 5 seconds
+2016-01-28 15:19:39,440 SELENIUM  bi-robot [INFO    ] SYSTEM_SLA_REQUEST_TIME_THRESHOLD : 120 seconds
+2016-01-28 15:19:39,440 SELENIUM  bi-robot [INFO    ] SYSTEM_SLA_PAGE_TIME_THRESHOLD    : 120 seconds
+2016-01-28 15:19:39,440 SELENIUM  bi-robot [INFO    ] SYSTEM_LOG_FILE_PATH              : /Users/rumiismail/developer/browser-automation
+2016-01-28 15:19:39,440 SELENIUM  bi-robot [INFO    ] ---- now into real business ----
+2016-01-28 15:19:55,742 SELENIUM  bi-robot [INFO    ] BEGIN step 1.0 - homePage
+2016-01-28 15:19:55,764 SELENIUM  bi-robot [DEBUG   ] >>>>> ENTER executing step 1.0 action get
+2016-01-28 15:19:59,392 SELENIUM  bi-robot [DEBUG   ] >>>>> EXIT after executing step 1.0 action get
+2016-01-28 15:20:00,279 SELENIUM  bi-robot [DEBUG   ] >>>>> looking to extract the session id
+2016-01-28 15:20:00,280 SELENIUM  bi-robot [DEBUG   ] >>>>> after exiting the loop in getSessionId()
+2016-01-28 15:20:00,280 SELENIUM  bi-robot [INFO    ] user session id: BiqUEpVSgC0hQe34
+2016-01-28 15:20:00,280 SELENIUM  bi-robot [DEBUG   ] >>>>> BEGIN capturing a screenshot of the current page
+2016-01-28 15:20:03,039 SELENIUM  bi-robot [DEBUG   ] >>>>> END capturing the screenshot of the current page
+2016-01-28 15:20:03,039 SELENIUM  bi-robot [DEBUG   ] >>>>> I will now try to capture the pageload times, but could take long on a slow site
+2016-01-28 15:20:03,076 SELENIUM  bi-robot [DEBUG   ] >>>>> now I'm registerign the step time
+2016-01-28 15:20:03,079 SELENIUM  bi-robot [DEBUG   ] [ 1.0]        homePage : DOMContentLoaded =       2505, FullyLoaded =       3556
+2016-01-28 15:20:03,081 SELENIUM  bi-robot [DEBUG   ] >>>>> I will now start processing the HAR file
+2016-01-28 15:20:06,747 SELENIUM  bi-robot [DEBUG   ] >>>>> processing the HAR file is now complete
+2016-01-28 15:20:06,821 SELENIUM  bi-robot [INFO    ] total page weight is 2826716 bytes (2.70 MBytes)
+2016-01-28 15:20:06,821 SELENIUM  bi-robot [DEBUG   ] >>>>> page stats: curl -k -XPOST https://52.31.192.17:12280/gelf -d '{ "host":"woodhouse.tryzens.net", "short_message":"Synthetic User Journey", "message_type":"PageWeight", "journey_name":"GuestUserCart", "step_seq":"1", "step_sub":"0", "step_name":"homePage", "byte_size":2826716,"status_code":"301", "error_count": 4, "request_count": 190, "user_session":"BiqUEpVSgC0hQe34", "expensive_url":"https%3A%2F%2Fshavar.services.mozilla.com%3A443%2Fdownloads%3Fclient%3Dnavclient-auto-ffox%26appver%3D43.0.4%26pver%3D2.2", "max_time": 1177, "step_time": 3556, "exception": "None", "error_message":"" }'
+2016-01-28 15:20:06,821 SELENIUM  bi-robot [INFO    ] sending step stats to Graylog @ https://52.31.192.17:12280/gelf
+2016-01-28 15:20:07,154 SELENIUM  bi-robot [INFO    ] ******* send COMPLETE ********
+2016-01-28 15:20:07,154 SELENIUM  bi-robot [INFO    ] sleeping for 1 seconds before next step
+2016-01-28 15:20:08,160 SELENIUM  bi-robot [INFO    ] BEGIN step 2.1 - lookup
+2016-01-28 15:20:08,184 SELENIUM  bi-robot [DEBUG   ] >>>>> ENTER executing step 2.1 action lookup
+2016-01-28 15:20:08,292 SELENIUM  bi-robot [INFO    ] lookup href found in response : http://twitter.com/WoodhouseTweets
+2016-01-28 15:20:08,292 SELENIUM  bi-robot [DEBUG   ] >>>>> EXIT after executing step 2.1 action lookup
+2016-01-28 15:20:08,292 SELENIUM  bi-robot [DEBUG   ] >>>>> BEGIN capturing a screenshot of the current page
+2016-01-28 15:20:09,709 SELENIUM  bi-robot [DEBUG   ] >>>>> END capturing the screenshot of the current page
+2016-01-28 15:20:09,709 SELENIUM  bi-robot [INFO    ] BEGIN step 2.2 - hoverCategory
+2016-01-28 15:20:09,709 SELENIUM  bi-robot [DEBUG   ] >>>>> ENTER executing step 2.2 action hover
+2016-01-28 15:20:09,859 SELENIUM  bi-robot [DEBUG   ] >>>>> EXIT after executing step 2.2 action hover
+2016-01-28 15:20:09,859 SELENIUM  bi-robot [DEBUG   ] >>>>> BEGIN capturing a screenshot of the current page
+2016-01-28 15:20:11,962 SELENIUM  bi-robot [DEBUG   ] >>>>> END capturing the screenshot of the current page
+2016-01-28 15:20:11,962 SELENIUM  bi-robot [INFO    ] BEGIN step 2.0 - selectCategory
+2016-01-28 15:20:11,963 SELENIUM  bi-robot [DEBUG   ] >>>>> ENTER executing step 2.0 action click
+2016-01-28 15:20:12,126 SELENIUM  bi-robot [DEBUG   ] >>>>> EXIT after executing step 2.0 action click
+2016-01-28 15:20:12,126 SELENIUM  bi-robot [DEBUG   ] >>>>> BEGIN capturing a screenshot of the current page
+2016-01-28 15:20:16,701 SELENIUM  bi-robot [DEBUG   ] >>>>> END capturing the screenshot of the current page
+2016-01-28 15:20:16,702 SELENIUM  bi-robot [DEBUG   ] >>>>> I will now try to capture the pageload times, but could take long on a slow site
+2016-01-28 15:20:16,842 SELENIUM  bi-robot [DEBUG   ] >>>>> now I'm registerign the step time
+2016-01-28 15:20:16,842 SELENIUM  bi-robot [DEBUG   ] [ 2.0]  selectCategory : DOMContentLoaded =       2299, FullyLoaded =       2597
+2016-01-28 15:20:16,843 SELENIUM  bi-robot [DEBUG   ] >>>>> I will now start processing the HAR file
+2016-01-28 15:20:17,146 SELENIUM  bi-robot [DEBUG   ] >>>>> processing the HAR file is now complete
+2016-01-28 15:20:17,161 SELENIUM  bi-robot [INFO    ] total page weight is 80264 bytes (78.38 KBytes)
+2016-01-28 15:20:17,161 SELENIUM  bi-robot [DEBUG   ] >>>>> page stats: curl -k -XPOST https://52.31.192.17:12280/gelf -d '{ "host":"woodhouse.tryzens.net", "short_message":"Synthetic User Journey", "message_type":"PageWeight", "journey_name":"GuestUserCart", "step_seq":"2", "step_sub":"0", "step_name":"selectCategory", "byte_size":80264,"status_code":"200", "error_count": 4, "request_count": 36, "user_session":"BiqUEpVSgC0hQe34", "expensive_url":"http%3A%2F%2Fwoodhouse.tryzens.net%2Fen-gb%2Flocayta%2Frecommendation%2Fcategory%2FcategoryId%2F75%2F%3FisAjax%3D1%26pageUrl%3Dhttp%3A%2F%2Fwoodhouse.tryzens.net%2Fen-gb%2Fclothing%2Fjackets.html", "max_time": 797, "step_time": 2597, "exception": "None", "error_message":"" }'
+2016-01-28 15:20:17,161 SELENIUM  bi-robot [INFO    ] sending step stats to Graylog @ https://52.31.192.17:12280/gelf
+2016-01-28 15:20:17,434 SELENIUM  bi-robot [INFO    ] ******* send COMPLETE ********
+2016-01-28 15:20:17,435 SELENIUM  bi-robot [INFO    ] sleeping for 1 seconds before next step
+2016-01-28 15:20:18,435 SELENIUM  bi-robot [INFO    ] BEGIN step 3.0 - selectProduct
+2016-01-28 15:20:18,446 SELENIUM  bi-robot [DEBUG   ] >>>>> ENTER executing step 3.0 action click
+2016-01-28 15:20:18,655 SELENIUM  bi-robot [DEBUG   ] >>>>> EXIT after executing step 3.0 action click
+2016-01-28 15:20:18,655 SELENIUM  bi-robot [DEBUG   ] >>>>> BEGIN capturing a screenshot of the current page
+2016-01-28 15:20:23,391 SELENIUM  bi-robot [DEBUG   ] >>>>> END capturing the screenshot of the current page
+2016-01-28 15:20:23,391 SELENIUM  bi-robot [DEBUG   ] >>>>> I will now try to capture the pageload times, but could take long on a slow site
+2016-01-28 15:21:22,636 SELENIUM  bi-robot [DEBUG   ] >>>>> now I'm registerign the step time
+2016-01-28 15:21:22,636 SELENIUM  bi-robot [DEBUG   ] [ 3.0]   selectProduct : DOMContentLoaded =       2137, FullyLoaded =      63375
+2016-01-28 15:21:22,636 SELENIUM  bi-robot [DEBUG   ] >>>>> I will now start processing the HAR file
+2016-01-28 15:21:23,888 SELENIUM  bi-robot [DEBUG   ] >>>>> processing the HAR file is now complete
+2016-01-28 15:21:23,933 SELENIUM  bi-robot [INFO    ] total page weight is 2171477 bytes (2.07 MBytes)
+2016-01-28 15:21:23,933 SELENIUM  bi-robot [DEBUG   ] >>>>> page stats: curl -k -XPOST https://52.31.192.17:12280/gelf -d '{ "host":"woodhouse.tryzens.net", "short_message":"Synthetic User Journey", "message_type":"PageWeight", "journey_name":"GuestUserCart", "step_seq":"3", "step_sub":"0", "step_name":"selectProduct", "byte_size":2171477,"status_code":"200", "error_count": 8, "request_count": 86, "user_session":"BiqUEpVSgC0hQe34", "expensive_url":"https%3A%2F%2Fie06.zopim.com%3A443%2Fs%2FW%2Fxdds%2F3bP3YTkVLh4S4du2%2Fp%2F1453994421975", "max_time": 59913, "step_time": 63375, "exception": "None", "error_message":"" }'
+2016-01-28 15:21:23,933 SELENIUM  bi-robot [INFO    ] sending step stats to Graylog @ https://52.31.192.17:12280/gelf
+2016-01-28 15:21:24,281 SELENIUM  bi-robot [INFO    ] ******* send COMPLETE ********
+2016-01-28 15:21:24,281 SELENIUM  bi-robot [INFO    ] sleeping for 1 seconds before next step
+2016-01-28 15:21:25,286 SELENIUM  bi-robot [INFO    ] BEGIN step 7.0 - homePage
+2016-01-28 15:21:25,307 SELENIUM  bi-robot [DEBUG   ] >>>>> ENTER executing step 7.0 action click
+2016-01-28 15:21:25,526 SELENIUM  bi-robot [DEBUG   ] >>>>> EXIT after executing step 7.0 action click
+2016-01-28 15:21:25,526 SELENIUM  bi-robot [DEBUG   ] >>>>> BEGIN capturing a screenshot of the current page
+2016-01-28 15:21:31,427 SELENIUM  bi-robot [DEBUG   ] >>>>> END capturing the screenshot of the current page
+2016-01-28 15:21:31,427 SELENIUM  bi-robot [DEBUG   ] >>>>> I will now try to capture the pageload times, but could take long on a slow site
+2016-01-28 15:21:31,461 SELENIUM  bi-robot [DEBUG   ] >>>>> now I'm registerign the step time
+2016-01-28 15:21:31,461 SELENIUM  bi-robot [DEBUG   ] [ 7.0]        homePage : DOMContentLoaded =       1682, FullyLoaded =       2331
+2016-01-28 15:21:31,461 SELENIUM  bi-robot [DEBUG   ] >>>>> I will now start processing the HAR file
+2016-01-28 15:21:31,631 SELENIUM  bi-robot [DEBUG   ] >>>>> processing the HAR file is now complete
+2016-01-28 15:21:31,642 SELENIUM  bi-robot [INFO    ] total page weight is 41858 bytes (40.88 KBytes)
+2016-01-28 15:21:31,642 SELENIUM  bi-robot [DEBUG   ] >>>>> page stats: curl -k -XPOST https://52.31.192.17:12280/gelf -d '{ "host":"woodhouse.tryzens.net", "short_message":"Synthetic User Journey", "message_type":"PageWeight", "journey_name":"GuestUserCart", "step_seq":"7", "step_sub":"0", "step_name":"homePage", "byte_size":41858,"status_code":"200", "error_count": 3, "request_count": 25, "user_session":"BiqUEpVSgC0hQe34", "expensive_url":"http%3A%2F%2Fm.addthis.com%2Flive%2Fred_lojson%2F100eng.json%3Fsh%3D0%26ph%3D3678%26ivh%3D659%26dt%3D65162%26ict%3Dabout%3Ablank%7C1%26pct%3D1%26perf%3Djs%2F250%2Faddthis_widget.js%7C0.00%7C616.74%2Cstatic%2Flayers.d7a5f2aefb2cdd35d7b1.js%7C1728.06%7C92.73%2Cjs%2F250%2Faddthis_widget.js%7C1728.43%7C26.33%2Cstatic%2Fsh.c484f296442c4cec3c78eab5.html%7C2119.51%7C22.73%2Clojson%7C265", "max_time": 585, "step_time": 2331, "exception": "None", "error_message":"" }'
+2016-01-28 15:21:31,643 SELENIUM  bi-robot [INFO    ] sending step stats to Graylog @ https://52.31.192.17:12280/gelf
+2016-01-28 15:21:31,918 SELENIUM  bi-robot [INFO    ] ******* send COMPLETE ********
+2016-01-28 15:21:31,918 SELENIUM  bi-robot [INFO    ] sleeping for 1 seconds before next step
+2016-01-28 15:21:32,924 SELENIUM  bi-robot [INFO    ] BEGIN step 8.1 - focusSearchBox
+2016-01-28 15:21:32,932 SELENIUM  bi-robot [DEBUG   ] >>>>> ENTER executing step 8.1 action click
+2016-01-28 15:21:33,069 SELENIUM  bi-robot [DEBUG   ] >>>>> EXIT after executing step 8.1 action click
+2016-01-28 15:21:33,069 SELENIUM  bi-robot [DEBUG   ] >>>>> BEGIN capturing a screenshot of the current page
+2016-01-28 15:21:35,114 SELENIUM  bi-robot [DEBUG   ] >>>>> END capturing the screenshot of the current page
+2016-01-28 15:21:35,114 SELENIUM  bi-robot [INFO    ] BEGIN step 8.2 - clearInput
+2016-01-28 15:21:35,114 SELENIUM  bi-robot [DEBUG   ] >>>>> ENTER executing step 8.2 action clear
+2016-01-28 15:21:35,158 SELENIUM  bi-robot [DEBUG   ] >>>>> EXIT after executing step 8.2 action clear
+2016-01-28 15:21:35,158 SELENIUM  bi-robot [DEBUG   ] >>>>> BEGIN capturing a screenshot of the current page
+2016-01-28 15:21:36,629 SELENIUM  bi-robot [DEBUG   ] >>>>> END capturing the screenshot of the current page
+2016-01-28 15:21:36,630 SELENIUM  bi-robot [INFO    ] BEGIN step 8.3 - enterText
+2016-01-28 15:21:36,630 SELENIUM  bi-robot [DEBUG   ] >>>>> ENTER executing step 8.3 action keyin
+2016-01-28 15:21:36,881 SELENIUM  bi-robot [DEBUG   ] >>>>> EXIT after executing step 8.3 action keyin
+2016-01-28 15:21:36,881 SELENIUM  bi-robot [DEBUG   ] >>>>> BEGIN capturing a screenshot of the current page
+2016-01-28 15:21:39,370 SELENIUM  bi-robot [DEBUG   ] >>>>> END capturing the screenshot of the current page
+2016-01-28 15:21:39,370 SELENIUM  bi-robot [INFO    ] BEGIN step 9.0 - search
+2016-01-28 15:21:39,370 SELENIUM  bi-robot [DEBUG   ] >>>>> ENTER executing step 9.0 action click
+2016-01-28 15:21:39,528 SELENIUM  bi-robot [DEBUG   ] >>>>> EXIT after executing step 9.0 action click
+2016-01-28 15:21:39,529 SELENIUM  bi-robot [DEBUG   ] >>>>> BEGIN capturing a screenshot of the current page
+2016-01-28 15:21:41,439 SELENIUM  bi-robot [DEBUG   ] >>>>> END capturing the screenshot of the current page
+2016-01-28 15:21:41,439 SELENIUM  bi-robot [DEBUG   ] >>>>> I will now try to capture the pageload times, but could take long on a slow site
+2016-01-28 15:21:43,345 SELENIUM  bi-robot [DEBUG   ] >>>>> now I'm registerign the step time
+2016-01-28 15:21:43,345 SELENIUM  bi-robot [DEBUG   ] [ 9.0]          search : DOMContentLoaded =       3007, FullyLoaded =       3420
+2016-01-28 15:21:43,346 SELENIUM  bi-robot [DEBUG   ] >>>>> I will now start processing the HAR file
+2016-01-28 15:21:43,559 SELENIUM  bi-robot [DEBUG   ] >>>>> processing the HAR file is now complete
+2016-01-28 15:21:43,571 SELENIUM  bi-robot [INFO    ] total page weight is 147276 bytes (143.82 KBytes)
+2016-01-28 15:21:43,571 SELENIUM  bi-robot [DEBUG   ] >>>>> page stats: curl -k -XPOST https://52.31.192.17:12280/gelf -d '{ "host":"woodhouse.tryzens.net", "short_message":"Synthetic User Journey", "message_type":"PageWeight", "journey_name":"GuestUserCart", "step_seq":"9", "step_sub":"0", "step_name":"search", "byte_size":147276,"status_code":"404", "error_count": 5, "request_count": 26, "user_session":"BiqUEpVSgC0hQe34", "expensive_url":"http%3A%2F%2Fwoodhouse.tryzens.net%2Fen-gb%2Fcatalogsearch%2Fresult%2F%3Fq%3Dshoes", "max_time": 1477, "step_time": 3420, "exception": "None", "error_message":"" }'
+2016-01-28 15:21:43,571 SELENIUM  bi-robot [INFO    ] sending step stats to Graylog @ https://52.31.192.17:12280/gelf
+2016-01-28 15:21:43,876 SELENIUM  bi-robot [INFO    ] ******* send COMPLETE ********
+2016-01-28 15:21:43,876 SELENIUM  bi-robot [INFO    ] sleeping for 1 seconds before next step
+2016-01-28 15:21:44,882 SELENIUM  bi-robot [INFO    ] sending journey stats to Graylog @ https://52.31.192.17:12280/gelf
+2016-01-28 15:21:44,882 SELENIUM  bi-robot [DEBUG   ] >>>>> journey stats: curl -k -XPOST https://52.31.192.17:12280/gelf -d  '{ "host":"woodhouse.tryzens.net", "short_message":"Synthetic User Journey", "message_type":"JourneySummary", "journey_name": "GuestUserCart", "user_session": "BiqUEpVSgC0hQe34", "journey_time": 75279, "expensive_step": "selectProduct", "max_time": 63375, "total_errors": 24, "status": "SUCCESSFUL" }'
+2016-01-28 15:21:45,162 SELENIUM  bi-robot [INFO    ] ******* send ALL COMPLETE ********
+2016-01-28 15:21:45,162 SELENIUM  bi-robot [INFO    ] sleeping for 5 seconds before terminating script
+2016-01-28 15:21:50,164 SELENIUM  bi-robot [INFO    ] ------------ end of execution ------------
+2016-01-28 15:21:50,164 SELENIUM  bi-robot [DEBUG   ] >>>>>  cleaning up resources <<<<<<
