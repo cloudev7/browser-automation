@@ -3,7 +3,7 @@
 # Author  : Mohamed Ismail (mohamed.ismail@tryzens.com)           /
 # Company : Tryzens                                               /
 # Date    : 9 Jan 2016                                            /
-# Version : 3.0.0                                                 /
+# Version : 3.1.0                                                 /
 # Description : This script is used to simulate customer journey  /
 # ****************************************************************/
 from selenium import webdriver
@@ -103,6 +103,7 @@ def loadConfigs():
 
     logger.info("------- User parameters--------", extra=LOG_HEAD)
     logger.info("SYSTEM_WEB_DOMAIN                 : %s", SYSTEM_WEB_DOMAIN, extra=LOG_HEAD)
+    logger.info("SYSTEM_WEB_DOMAIN_URL             : %s", SYSTEM_WEB_DOMAIN_URL, extra=LOG_HEAD)
     logger.info("SYSTEM_SELENIUM_HUB_URL           : %s", SYSTEM_SELENIUM_HUB_URL, extra=LOG_HEAD)
     logger.info("SYSTEM_BROWSER_PROXY              : %s", SYSTEM_BROWSER_PROXY, extra=LOG_HEAD)
     logger.info("SYSTEM_GRAYLOG_REST_URL           : %s", SYSTEM_GRAYLOG_REST_URL, extra=LOG_HEAD)
@@ -196,7 +197,7 @@ class SyntheticUserJourney(unittest.TestCase):
         try:
             loadConfigs()
             proxi = browsermobproxy.Client(SYSTEM_BROWSER_PROXY)
-            proxi.blacklist('.*zopim.*',200)
+            proxi.blacklist('.*zopim.*', 200)
             driver = webdriver.Remote(
                 command_executor=SYSTEM_SELENIUM_HUB_URL,
                 desired_capabilities=capabilities,
@@ -517,10 +518,10 @@ class SyntheticUserJourney(unittest.TestCase):
             sizeUnit = "bytes"
 
         logger.info("total page weight is %s bytes (%s %s)", total_byteSize, "{0:.2f}".format(pageSize), sizeUnit, extra=LOG_HEAD)
-
+	# graylog entry should be with hostname of domain only evenif different store is present
         curl_cmd = (   
             "curl -k -XPOST " + SYSTEM_GRAYLOG_REST_URL + 
-            ' -d \'{ "host":"' + SYSTEM_WEB_DOMAIN + 
+            ' -d \'{ "host":"' + SYSTEM_WEB_DOMAIN_URL + 
             '", "short_message":"Synthetic User Journey", "message_type":"PageWeight", "journey_name":"' + 
             SYSTEM_JOURNEY_NAME + '", "step_seq":"' + 
             stepSeq + '", "step_sub":"' + stepSeqSub + 
@@ -564,7 +565,7 @@ class SyntheticUserJourney(unittest.TestCase):
 
         curl_cmd = (
             "curl -k -XPOST " + SYSTEM_GRAYLOG_REST_URL + 
-            ' -d  \'{ "host":"' + SYSTEM_WEB_DOMAIN + 
+            ' -d  \'{ "host":"' + SYSTEM_WEB_DOMAIN_URL + 
             '", "short_message":"Synthetic User Journey", "message_type":"JourneySummary", "journey_name": "' + 
             SYSTEM_JOURNEY_NAME + '", "user_session": "' + sessionId + 
             '", "journey_time": ' + str(journey_time) + ', "expensive_step": "' + 
@@ -624,14 +625,15 @@ driver = None
 
 # User variables
 SYSTEM_WEB_DOMAIN = "localhost"
-SYSTEM_GRAYLOG_REST_URL = "https://127.0.0.1:12280/gelf"
-SYSTEM_SELENIUM_HUB_URL = "http://127.0.0.1:4444/wd/hub"
-SYSTEM_BROWSER_PROXY = "127.0.0.1:9090"
+SYSTEM_WEB_DOMAIN_URL = "localhost"
+SYSTEM_GRAYLOG_REST_URL = "https://52.31.192.17:12280/gelf"
+SYSTEM_SELENIUM_HUB_URL = "http://172.17.0.1:4444/wd/hub"
+SYSTEM_BROWSER_PROXY = "172.17.0.1:9090"
 SYSTEM_JOURNEY_NAME = "GuestBrowseSite"
 SYSTEM_SLEEP_TIME_BEFORE_TERMINATE = 5
 SYSTEM_THINK_TIME_BETWEEN_STEPS = 1
-SYSTEM_SLA_REQUEST_TIME_THRESHOLD = 15
-SYSTEM_SLA_PAGE_TIME_THRESHOLD = 30
+SYSTEM_SLA_REQUEST_TIME_THRESHOLD = 30
+SYSTEM_SLA_PAGE_TIME_THRESHOLD = 60
 
 PLATFORM_SESSION_IDENTIFIER = [
     'sid', 
@@ -682,4 +684,5 @@ ProcessEndOfStep = False
 # The main entry point in the script
 if __name__ == "__main__":
     init(sys.argv[1:])
+
 
