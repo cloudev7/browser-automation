@@ -3,7 +3,7 @@
 # Author  : Mohamed Ismail (mohamed.ismail@tryzens.com)           /
 # Company : Tryzens                                               /
 # Date    : 9 Jan 2016                                            /
-# Version : 3.1.0                                                 /
+# Version : 3.2.3                                                 /
 # Description : This script is used to simulate customer journey  /
 # ****************************************************************/
 from selenium import webdriver
@@ -20,7 +20,7 @@ import browsermobproxy
 import urllib, json, unittest, re
 import os, sys, datetime, time, signal, traceback, getopt
 import logging, inspect
-
+import commands
 
 # configure logging
 RELATIVE_PATH         = "/tmp"
@@ -28,6 +28,9 @@ SYSTEM_LOG_FILE_PATH  = os.path.dirname(os.path.realpath(__file__))
 LOG_FILE              = "userjourney.log"
 CONFIG_FILE           = "journey.conf"
 steps                 = dict()
+EXIT_STATUS_FAILURE   = 1
+EXIT_STATUS_SUCCESS   = 0
+EXIT_STATUS_CODE      = EXIT_STATUS_FAILURE
 
 # setup logging
 #sys.tracebacklimit = 0
@@ -62,7 +65,7 @@ class UserJourneyStep:
     url = ""
     xpath = ""
     xpath_attr = ""
-    tls = "false"
+    tls = False 
 
     def __init__(self):
         self.seq = ""
@@ -70,12 +73,21 @@ class UserJourneyStep:
         self.name = ""
         self.method = ""
         self.url = "" 
-        self.tls = "" 
+        self.tls = False 
         self.xpath = ""
         self.xpath_attr = ""
 
     def setField(self, field, value):
         setattr(self, field, value)
+
+
+#this method will send the exist status code to the caller
+def sendExitStatus(exitCode = 1):
+    global EXIT_STATUS_CODE
+    EXIT_STATUS_CODE = exitCode
+
+    logger.info("exit status code is: %s", str(EXIT_STATUS_CODE), extra=LOG_HEAD)
+    sys.exit( EXIT_STATUS_CODE )
 
 
 # method to load user configuration
@@ -86,8 +98,8 @@ def loadConfigs():
     try:
         fhndl = open(RELATIVE_PATH + "/" + CONFIG_FILE)
     except IOError as e:
-        logger.error("I/O error({0}): {1}".format(e.errno, e.strerror), extra=LOG_HEAD)
-        sys.exit(2)
+        logger.error("I/O error({0}): {1}".format(e.errno, e.strerror), extra=LOG_HEAD) 
+        sendExitStatus()
 
     for line in fhndl: 
         if expr.match(line):
@@ -131,9 +143,14 @@ def loadConfigs():
             m = re.search('(?<=step_'+ i +')_(.*?)="(.*)"', line)
             if m != None:
                 field = m.group(1)
-                value = (m.group(2)).replace('\\','')
-                #print field + " : " +  value
-                getattr(steps[i], 'setField')(field, value)
+                tmp_value = (m.group(2)).replace('\\','')
+                if field == "tls":
+                   value = False
+                   if tmp_value == "on":
+                      value = True
+                   getattr(steps[i], 'setField')(field, value)
+                else:
+		   getattr(steps[i], 'setField')(field, tmp_value)
                 continue
 
     fhndl.close()
@@ -194,19 +211,33 @@ class SyntheticUserJourney(unittest.TestCase):
 
     def setUp(self):
         global driver, proxi, final_exception, exception, Error_Message
+
         try:
             loadConfigs()
-            proxi = browsermobproxy.Client(SYSTEM_BROWSER_PROXY)
-            proxi.blacklist('.*zopim.*', 200)
-            driver = webdriver.Remote(
-                command_executor=SYSTEM_SELENIUM_HUB_URL,
-                desired_capabilities=capabilities,
-                proxy=proxi
-            )
+
+            logger.debug(">>>>> initialising browsermobproxy....", extra=LOG_HEAD)
+            init_element = "browsermobproxy"
+            with timeout( seconds=WEBDRIVER_PROXY_TIMEOUT ):
+               proxi = browsermobproxy.Client(SYSTEM_BROWSER_PROXY)
+               proxi.blacklist('.*zopim.*', 200)
+
+            logger.debug(">>>>> initialising webdriver....", extra=LOG_HEAD)
+            init_element = "webdriver"
+            with timeout( seconds=WEBDRIVER_PROXY_TIMEOUT ):
+               driver = webdriver.Remote(
+                   command_executor=SYSTEM_SELENIUM_HUB_URL,
+                   desired_capabilities=capabilities,
+                   proxy=proxi
+               )
         
             driver.maximize_window()
-            driver.implicitly_wait(SYSTEM_SLA_PAGE_TIME_THRESHOLD)
+            #driver.implicitly_wait(SYSTEM_SLA_PAGE_TIME_THRESHOLD)
             driver.set_page_load_timeout(SYSTEM_SLA_REQUEST_TIME_THRESHOLD)
+
+        except TimeoutException, err:
+            logger.error("****** Timeout occured while initialising %s ******", init_element, extra=LOG_HEAD)
+            logger.info("Exit status code is: %s", str(EXIT_STATUS_CODE), extra=LOG_HEAD)
+            sys.exit(1)
 
         except Exception as err:
             exception = "WebDriverException"
@@ -216,8 +247,7 @@ class SyntheticUserJourney(unittest.TestCase):
             if len(err) >= 60:
                 err_msg = err[:60]
             logger.error("exception: %s [%s]", err_msg, getFrame(), extra=LOG_HEAD)
-            self.tearDown()
-            sys.exit(0)
+            self.tearDown()           
 
         self.base_url = "http://" + SYSTEM_WEB_DOMAIN
         self.base_url_tls = "https://" + SYSTEM_WEB_DOMAIN
@@ -228,7 +258,6 @@ class SyntheticUserJourney(unittest.TestCase):
     def execute_step(self, action, stepSeq, stepSeqSub, stepName, uri, xpath="", addAttr="", tls=False):
 
         global sessionId, currRequest, numRequests, total_byteSize, exception, stepStarted, startTime, final_exception, journey_status, Error_Message
-
         exception = None
 
         logger.info("BEGIN step %s.%s - %s", stepSeq, stepSeqSub, stepName, extra=LOG_HEAD) 
@@ -272,21 +301,22 @@ class SyntheticUserJourney(unittest.TestCase):
                     driver.find_element_by_xpath(xpath).send_keys(addAttr)
 
             elif action == "select" and addAttr != "":
-                logger.debug(">>>>> inside action SELECT block - {0}".format(str(addAttr)), extra=LOG_HEAD)
-
+                logger.debug(">>>>> start SELECT option index - {0}".format(str(addAttr)), extra=LOG_HEAD)
                 with timeout(seconds=SYSTEM_SLA_REQUEST_TIME_THRESHOLD):
-                    logger.debug(">>>>> before SELECT: line {0}".format(str(__LINE__)), extra=LOG_HEAD)
-                    select = Select(driver.find_element_by_name(xpath))
-                    select.select_by_index(2)
-                    logger.debug(">>>>> after SELECT: line {0}".format(str(__LINE__)), extra=LOG_HEAD)
+                    select = Select(driver.find_element_by_xpath(xpath))
+                    select.select_by_index(int(addAttr))
+                logger.debug(">>>>> end SELECT option index - {0}".format(str(addAttr)), extra=LOG_HEAD)
 
             logger.debug(">>>>> EXIT after executing step {0}.{1} action {2}".format(str(stepSeq), str(stepSeqSub), action), extra=LOG_HEAD)
 
             if stepSeq == "1" and stepSeqSub == "0":
-                #with timeout(seconds=SYSTEM_SLA_REQUEST_TIME_THRESHOLD):
                 sessionId = self.getSessionId()
-                #sessionId = driver.execute_script("return tfa.getSessionId()")
-                logger.info("user session id: %s", sessionId, extra=LOG_HEAD)
+
+                if sessionId == "-" or sessionId == "" or sessionId == None:
+                    logger.error("***** Session ID is NOT valid, aborting script!! *****", extra=LOG_HEAD)
+                    self.tearDown();
+                else:
+                    logger.info("user session id: %s", sessionId, extra=LOG_HEAD)
 
             logger.debug(">>>>> BEGIN capturing a screenshot of the current page", extra=LOG_HEAD)
             with timeout(seconds=SYSTEM_SLA_REQUEST_TIME_THRESHOLD):
@@ -313,7 +343,6 @@ class SyntheticUserJourney(unittest.TestCase):
 
         if stepSeqSub != "0" and exception == None:
             return
-
 
         global statusCode, ProcessEndOfStep, errCount, expensiveURL, maxTime, stepTime 
 
@@ -355,7 +384,7 @@ class SyntheticUserJourney(unittest.TestCase):
                 uri = stepName # an alternative to set the URL when its empty 
 
         
-        logger.debug(">>>>> now I'm registerign the step time", extra=LOG_HEAD)
+        logger.debug(">>>>> now I'm registering the step time", extra=LOG_HEAD)
         if fullyLoadedTime > 0:
             stepTime = fullyLoadedTime
         else:
@@ -369,6 +398,9 @@ class SyntheticUserJourney(unittest.TestCase):
         logger.debug("[%2s.%s] %15s : DOMContentLoaded = %10s, FullyLoaded = %10s" %(stepSeq, stepSeqSub, stepName, str(domContentLoadedTime), str(fullyLoadedTime)), extra=LOG_HEAD)
 
         logger.debug(">>>>> I will now start processing the HAR file", extra=LOG_HEAD)
+
+        global pageAssets, glAssetCount
+
         for ent in proxi.har['log']['entries']:
             currRequest += 1
 
@@ -386,7 +418,52 @@ class SyntheticUserJourney(unittest.TestCase):
             byteSize = 0
             byteSize = ent['response']['headersSize'] + ent['response']['bodySize']
             numRequests += 1
-            total_byteSize += byteSize
+            
+            if byteSize > 0:
+                total_byteSize += byteSize
+
+            #Check for assets in the page requested
+            if 'mimeType' not in ent['response']['content']:
+                continue
+
+            # Only deal with assets when the mimeType is set
+            glAssetCount += 1
+            asset = str(ent['response']['content']['mimeType']) 
+            tag = "other"
+
+            if RE_JAVASCRIPT.match(asset):
+                tag = "javascript"
+            elif RE_CSS.match(asset):
+                tag = "css"
+            elif RE_IMAGE.match(asset):
+                tag = "image"
+            elif RE_HTML.match(asset):
+                tag = "html"
+
+            if tag in pageAssets: # if the page tag exist in the dictionary
+               if 'count' in pageAssets[ tag ]:
+                    pageAssets[ tag ]['count'] += 1
+               else:
+                    pageAssets[ tag ]['count'] = 1
+
+               if 'size' in pageAssets[ tag ]:
+                  if byteSize > 0:
+                      pageAssets[ tag ]['size'] += byteSize
+               else:
+                  if byteSize > 0:
+                      pageAssets[ tag ]['size'] = byteSize
+                  else:
+                      pageAssets[ tag ]['size'] = 0
+            
+            else: # if the page tag does not exist in the dictionary
+               pageAssets[ tag ] = dict()
+               pageAssets[ tag ]['count'] = 1
+
+               if  byteSize > 0:
+                  pageAssets[ tag ]['size'] = byteSize
+               else:
+                  pageAssets[ tag ]['size'] = 0
+
 
         if stepTime >= ( SYSTEM_SLA_PAGE_TIME_THRESHOLD * 1000 ) and exception == None:
             exception = "TimeoutException"
@@ -416,8 +493,7 @@ class SyntheticUserJourney(unittest.TestCase):
             time.sleep(SYSTEM_SLEEP_TIME_BEFORE_TERMINATE)
             journey_status = JOURNEY_STATUS_FAILED + final_exception
             self.send_journey_time() 
-            self.tearDown()  
-            sys.exit(1)
+            self.tearDown()
 
         logger.info("sleeping for %s seconds before next step", str(SYSTEM_THINK_TIME_BETWEEN_STEPS), extra=LOG_HEAD)
         time.sleep(SYSTEM_THINK_TIME_BETWEEN_STEPS)
@@ -426,6 +502,7 @@ class SyntheticUserJourney(unittest.TestCase):
     def test_userJourney(self):
 
         global journey_time, journey_status, final_exception
+        global EXIT_STATUS_SUCCESS
 
         # user journey execution steps begin heree
         sortedSeq = sorted(steps, key=lambda x: int(x))
@@ -444,9 +521,8 @@ class SyntheticUserJourney(unittest.TestCase):
         # user journey execution steps end heree
         logger.info("sleeping for %s seconds before terminating script", str(SYSTEM_SLEEP_TIME_BEFORE_TERMINATE), extra=LOG_HEAD)
         time.sleep(SYSTEM_SLEEP_TIME_BEFORE_TERMINATE)
-        logger.info("------------ end of execution ------------", extra=LOG_HEAD)
-        self.tearDown()
-        sys.exit(0)        
+        logger.info("------------ End of SUCCESSFUL execution ------------", extra=LOG_HEAD)
+        self.tearDown( EXIT_STATUS_SUCCESS )      
  
 
     def is_element_present(self, how, what):
@@ -473,20 +549,38 @@ class SyntheticUserJourney(unittest.TestCase):
         finally: self.accept_next_alert = True
     
 
-    def tearDown(self):
-        global proxi, driver
+    def tearDown(self, exitCode = 1):
+        global proxi, driver, EXIT_STATUS_CODE       
+        EXIT_STATUS_CODE = exitCode
 
-        if proxi != None or driver != None:
+        #either the proxi or the driver is None:
+        if driver != None or proxi != None:
             try:
-                logger.debug(">>>>>  cleaning up resources <<<<<<", extra=LOG_HEAD)
-                if proxi != None:
-                    proxi.close()
-                    proxi = None
+                logger.debug(">>>>> I will now try to release resources <<<<<<", extra=LOG_HEAD)
+                
                 if driver != None:
+                    logger.debug(">>>>>>>> releasing resources held by the webdriver....", extra=LOG_HEAD)
                     driver.quit()
                     driver = None
+                
+                if proxi != None:
+                    logger.debug(">>>>>>>> releasing resources held by the proxy....", extra=LOG_HEAD)
+                    proxi.close()
+                    proxi = None
+
             except:
-                logger.warning("error while doing the cleanup in tearDown()!!!!", extra=LOG_HEAD)
+                logger.warning("error while doing the cleanup in tearDown()", extra=LOG_HEAD)
+                if EXIT_STATUS_CODE != 0:
+                    sendExitStatus( EXIT_STATUS_CODE )
+                else:
+                    sendExitStatus( EXIT_STATUS_SUCCESS )
+
+            if EXIT_STATUS_CODE != 0:
+                logger.info("****** End Of Execution - Journey FAILED ", extra=LOG_HEAD)
+            else:
+                logger.info("****** End Of Execution - Journey SUCCESSFUL ", extra=LOG_HEAD)
+
+            sendExitStatus( EXIT_STATUS_CODE )
 
 
     def send_step_time(self, stepSeq, stepSeqSub, stepName):
@@ -503,7 +597,6 @@ class SyntheticUserJourney(unittest.TestCase):
         except IOError as e:
             logger.error("I/O error({0}): {1} {2}]".format(e.errno, e.strerror, getFrame()), extra=LOG_HEAD)
             self.tearDown()
-            sys.exit(2)
 
         if total_byteSize >= 1048576:
             pageSize = total_byteSize / (1024*1024*1.00)
@@ -517,8 +610,20 @@ class SyntheticUserJourney(unittest.TestCase):
             pageSize = total_byteSize
             sizeUnit = "bytes"
 
+        global pageAssets, glAssetCount
+        firstPair = 0
+        all_assets = ""
+
+        for i in (pageAssets.keys()):
+            countAndSize = str(i) + "=" + str(pageAssets[i]['count']) + "@" + str(pageAssets[i]['size'])
+            if firstPair == 0:
+                all_assets =  countAndSize
+                firstPair = 1
+            else:
+                all_assets += ";" + countAndSize
+
         logger.info("total page weight is %s bytes (%s %s)", total_byteSize, "{0:.2f}".format(pageSize), sizeUnit, extra=LOG_HEAD)
-	# graylog entry should be with hostname of domain only evenif different store is present
+	    # graylog entry should be with hostname of domain only evenif different store is present
         curl_cmd = (   
             "curl -k -XPOST " + SYSTEM_GRAYLOG_REST_URL + 
             ' -d \'{ "host":"' + SYSTEM_WEB_DOMAIN_URL + 
@@ -527,9 +632,10 @@ class SyntheticUserJourney(unittest.TestCase):
             stepSeq + '", "step_sub":"' + stepSeqSub + 
             '", "step_name":"' + stepName + '", "byte_size":' + 
             str(total_byteSize) + ',"status_code":"' + statusCode + 
-            '", "error_count": ' + str(errCount) + ', "request_count": ' 
-            + str(numRequests) + ', "user_session":"' + sessionId + 
-            '", "expensive_url":"' + urllib.quote(expensiveURL, safe='') + 
+            '", "error_count": ' + str(errCount) + ', "request_count":' +
+            str(numRequests) + ', "user_session":"' + sessionId + 
+            '", "assets":"' + str(all_assets) + '", "total_assets":' + str(glAssetCount) +
+            ', "expensive_url":"' + urllib.quote(expensiveURL, safe='') + 
             '", "max_time": ' + str(maxTime) + ', "step_time": ' + 
             str(stepTime) + ', "exception": "' + str(exception) + 
             '", "error_message":"' + Error_Message + '" }\''
@@ -542,7 +648,7 @@ class SyntheticUserJourney(unittest.TestCase):
             expensive_step = stepName
 
         journey_time += stepTime
-        total_err_count += errCount
+        total_err_count += errCount   
 
         statusCode     = "-"
         errCount       = 0    
@@ -551,11 +657,17 @@ class SyntheticUserJourney(unittest.TestCase):
         expensiveURL   = "-"
         maxTime        = 0
         stepTime       = 0
+        pageAssets.clear()
+        glAssetCount   = 0
 
         try:
-            logger.info("sending step stats to Graylog @ %s", SYSTEM_GRAYLOG_REST_URL, extra=LOG_HEAD)
-            os.system(curl_cmd)
-            logger.info("******* send COMPLETE ********", extra=LOG_HEAD)
+            logger.info("sending step data to Graylog @ %s", SYSTEM_GRAYLOG_REST_URL, extra=LOG_HEAD)
+            rv = os.system(curl_cmd)
+            if rv == 0:
+                logger.info("******* step data SENT Successfully *******", extra=LOG_HEAD)
+            else:
+                logger.error("FAILED to send step data to Graylog!", extra=LOG_HEAD)
+            
         except Exception, err:
             logger.error("error while sending stats to Graylog @ %s [%s]", SYSTEM_GRAYLOG_REST_URL, getFrame(), extra=LOG_HEAD)
             pass
@@ -574,10 +686,14 @@ class SyntheticUserJourney(unittest.TestCase):
         )
 
         try:
-            logger.info("sending journey stats to Graylog @ %s", SYSTEM_GRAYLOG_REST_URL, extra=LOG_HEAD)
+            logger.info("sending journey data to Graylog @ %s", SYSTEM_GRAYLOG_REST_URL, extra=LOG_HEAD)
             logger.debug(">>>>> journey stats: %s", curl_cmd, extra=LOG_HEAD)
-            os.system(curl_cmd)
-            logger.info("******* send ALL COMPLETE ********", extra=LOG_HEAD)
+            rv = os.system(curl_cmd)
+            if rv == 0:
+                logger.info("******* journey data SENT Successfully  *******", extra=LOG_HEAD)
+            else:
+                logger.error("FAILED to send journey summary to Graylog!", extra=LOG_HEAD)
+
         except Exception, err:
             logger.error("error while sending stats to Graylog @ %s [%s]", SYSTEM_GRAYLOG_REST_URL, getFrame(), extra=LOG_HEAD)
             pass
@@ -591,49 +707,54 @@ def usage():
 def init(argv):
 
     global RELATIVE_PATH
+
     try:
         opts, args = getopt.getopt(argv,"hc:",["help", "config="])
+        cmd_line_args_found = False
 
         for opt, arg in opts:
             if opt in ("-h", "--help"):
+                cmd_line_args_found = True
                 usage()
-                sys.exit(0)
+                sendExitStatus()
 
             elif opt == '-c' or opt == "--config":
+                cmd_line_args_found = True
                 RELATIVE_PATH = SYSTEM_LOG_FILE_PATH + "/" + arg
                 configurePath()
                 # Now run the user journey
                 out = SyntheticUserJourney('test_userJourney')()
-                sys.exit(0)
 
-        print "Oops! sorry mate, I didn't understand that\n"
-        usage()
-        sys.exit(0)
+
+        if cmd_line_args_found == False:
+            print "Oops! sorry mate, I didn't understand that\n"
+            usage()
+            sendExitStatus()
 
     except getopt.GetoptError:
         usage()
-        sys.exit(2)
+        sendExitStatus()
 
-#"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:38.0) Gecko/20100101 Firefox/38.0"
-user_agent_str = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.11; rv:43.0) Gecko/20100101 Firefox/43.0; TryzensUXBot"
-#"Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/45.0.2454.101 Safari/537.36"
 
 # Global declarations
+user_agent_str = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.11; rv:43.0) Gecko/20100101 Firefox/43.0; TryzensUXBot"
 capabilities = DesiredCapabilities.FIREFOX.copy()
 capabilities['general.useragent.override'] = user_agent_str
 driver = None
+proxi = None
 
 # User variables
 SYSTEM_WEB_DOMAIN = "localhost"
 SYSTEM_WEB_DOMAIN_URL = "localhost"
-SYSTEM_GRAYLOG_REST_URL = "https://52.31.192.17:12280/gelf"
-SYSTEM_SELENIUM_HUB_URL = "http://172.17.0.1:4444/wd/hub"
-SYSTEM_BROWSER_PROXY = "172.17.0.1:9090"
+SYSTEM_GRAYLOG_REST_URL = "https://127.0.0.1:12280/gelf"
+SYSTEM_SELENIUM_HUB_URL = "http://127.0.0.1:4444/wd/hub"
+SYSTEM_BROWSER_PROXY = "127.0.0.1:9090"
 SYSTEM_JOURNEY_NAME = "GuestBrowseSite"
 SYSTEM_SLEEP_TIME_BEFORE_TERMINATE = 5
 SYSTEM_THINK_TIME_BETWEEN_STEPS = 1
 SYSTEM_SLA_REQUEST_TIME_THRESHOLD = 30
 SYSTEM_SLA_PAGE_TIME_THRESHOLD = 60
+WEBDRIVER_PROXY_TIMEOUT = 60
 
 PLATFORM_SESSION_IDENTIFIER = [
     'sid', 
@@ -646,8 +767,6 @@ requestTimeErrPattern    = re.compile(r"^RequestTime")
 pageTimeErrPattern       = re.compile(r"^PageTime")
 naviagtionTimeErrPattern = re.compile(r"^Navigation")
 timeoutExceptionPatter   = re.compile(r"^TimeoutException")
-
-proxi = None
 
 # Other variables
 OUTPUT_FILE_HEAD = SYSTEM_WEB_DOMAIN.replace("/", "_")
@@ -666,6 +785,13 @@ exception = None
 
 sizeUnit = "Bytes"
 total_byteSize = 0
+pageAssets = dict()
+RE_JAVASCRIPT = re.compile(r".*?javascript")
+RE_CSS = re.compile(r".*?css")
+RE_IMAGE = re.compile(r".*?image")
+RE_HTML = re.compile(r".*?html")
+glAssetCount = 0
+
 currRequest = 0
 stepStarted = False
 
